@@ -1,5 +1,3 @@
-#import curses
-#from curses import wrapper
 import threading
 from colorama import Fore
 
@@ -14,12 +12,20 @@ class CLIItem:
         return True
 
 class CLILoadingBar(CLIItem):
-    def __init__(self, name, progress=0, **kwargs):
+    def __init__(self, name, progress=None, **kwargs):
         super().__init__(name)
-        self.progress = progress
         self.waiter = threading.Event()
         self.kwargs_handler(**kwargs)
+        if progress is None:
+            self.progress = self.min_progress
+        else:
+            if not isinstance(progress, (int, float)):
+                raise ValueError(f"Progress must be an integer or float, got: {type(progress)}")
+            if progress < self.min_progress or progress > self.max_progress:
+                raise ValueError(f"Progress must be between {self.min_progress} and {self.max_progress}, got: {progress}")
+            self.progress = progress
         self.usages = []
+        self.handler = None
 
     def kwargs_handler(self, **kwargs):
         if 'width' in kwargs and isinstance(kwargs['width'], int):
@@ -34,11 +40,11 @@ class CLILoadingBar(CLIItem):
             self.end_char = kwargs['end_char']
         else:
             self.end_char = '#'
-        if 'empty_char' in kwargs and isinstance(kwargs['empty_char'], str) and len(kwargs['empty_char']) == 1:
+        if 'empty_char' in kwargs and isinstance(kwargs['empty_char'], str):
             self.empty_char = kwargs['empty_char']
         else:
             self.empty_char = '-'
-        if 'full_char' in kwargs and isinstance(kwargs['full_char'], str) and len(kwargs['full_char']) == 1:
+        if 'full_char' in kwargs and isinstance(kwargs['full_char'], str):
             self.full_char = kwargs['full_char']
         else:
             self.full_char = '='
@@ -54,6 +60,14 @@ class CLILoadingBar(CLIItem):
             self.done = kwargs['done']
         else:
             self.done = None
+        if 'max_progress' in kwargs and isinstance(kwargs['max_progress'], (int, float)):
+            self.max_progress = kwargs['max_progress']
+        else:
+            self.max_progress = 100
+        if 'min_progress' in kwargs and isinstance(kwargs['min_progress'], (int, float)):
+            self.min_progress = kwargs['min_progress']
+        else:
+            self.min_progress = 0
         if 'format' in kwargs:
             if 'format' in kwargs['format'] and 'items' in kwargs['format']:
                 if isinstance(kwargs['format']['items'], list) and isinstance(kwargs['format']['format'], str):
@@ -93,18 +107,32 @@ class CLILoadingBar(CLIItem):
             self.inserts = [0, 4, 7]
 
     def update(self, progress):
-        if not isinstance(progress, (int, float)):
-            raise ValueError(f"Progress must be an integer or float, got: {type(progress)}")
-        self.progress = progress
-        if self.progress >= 100:
-            self.progress = 100
-            self.waiter.set()
-        return True
+        if self.handler is not None:
+            if not isinstance(progress, (int, float)):
+                raise ValueError(f"Progress must be an integer or float, got: {type(progress)}")
+            self.progress = progress
+            if self.progress >= self.max_progress:
+                self.progress = 100
+                self.waiter.set()
+            return True
+        else:
+            return False
+
+    def __add__(self, other):
+        if isinstance(other, (int, float)):
+            self.update(self.progress + other)
+            return self
+        raise ValueError(f"Can only add int or float to CLILoadingBar, got: {type(other)}")
+
+    def __sub__(self, other):
+        if isinstance(other, (int, float)):
+            self.update(self.progress - other)
+            return self
+        raise ValueError(f"Can only subtract int or float from CLILoadingBar, got: {type(other)}")
 
     def use(self, position):
         pass
         # TODO: Implement
-
 
 class CLIText(CLIItem):
     def __init__(self, name, text=""):
@@ -113,6 +141,8 @@ class CLIText(CLIItem):
 
     # TODO: Implement
 
-class CLIHelper:
+class CLIAppHandler:
     def __init__(self, ):
         pass
+
+    # TODO: Implement

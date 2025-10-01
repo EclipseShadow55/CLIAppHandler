@@ -1,2 +1,6 @@
 from colorama import Fore
-from main import CLIItem
+import sys
+import os
+import time
+
+print(len(Fore.GREEN + '=' + Fore.RESET))
