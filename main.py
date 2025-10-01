@@ -103,12 +103,15 @@ class CLILoadingBar(CLIItem):
 
     def use(self, position):
         pass
+        # TODO: Implement
 
 
 class CLIText(CLIItem):
     def __init__(self, name, text=""):
         super().__init__(name)
         self.text = text
+
+    # TODO: Implement
 
 class CLIHelper:
     def __init__(self, ):
