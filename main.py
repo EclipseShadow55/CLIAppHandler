@@ -398,6 +398,5 @@ class CLIAppHandler:
     def __init__(self):
         self.text = []
         self.queue = []
-        self.lock = threading.Lock()
 
     # TODO: Implement
